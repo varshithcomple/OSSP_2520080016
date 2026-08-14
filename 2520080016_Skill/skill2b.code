@@ -1,0 +1,63 @@
+#include <stdio.h>
+#include <unistd.h>
+#include <termios.h>
+#include <string.h>
+#define BUFFER_SIZE 100
+int main()
+{
+    char buffer[BUFFER_SIZE];
+    int index = 0;
+    char ch;
+    struct termios oldt, newt;
+tcgetattr(STDIN_FILENO, &oldt);
+newt = oldt;
+newt.c_lflag &= ~(ICANON | ECHO);
+tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+printf("MiniShell> ");
+fflush(stdout);
+
+while (1)
+{
+    read(STDIN_FILENO, &ch, 1);
+
+    if (ch == '\n' || ch == '\r')
+    {
+        buffer[index] = '\0';
+        printf("\nYou entered: %s\n", buffer);
+
+        if (strcmp(buffer, "exit") == 0)
+        {
+            printf("Shell terminated.\n");
+            break;
+        }
+
+        index = 0;
+        printf("MiniShell> ");
+        fflush(stdout);
+    }
+    else if (ch == 127 || ch == 8)
+    {
+        if (index > 0)
+        {
+            index--;
+            printf("\b \b");
+            fflush(stdout);
+        }
+    }
+    else if (ch >= 32 && ch <= 126)
+    {
+        if (index < BUFFER_SIZE - 1)
+        {
+            buffer[index] = ch;
+            index++;
+            printf("%c", ch);
+            fflush(stdout);
+        }
+    }
+}
+
+tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+
+return 0;
+}
